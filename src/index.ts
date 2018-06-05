@@ -3,12 +3,13 @@ import { createKoaServer, BadRequestError, Action } from 'routing-controllers'
 import { verify } from './jwt'
 import LoginController from './logins'
 import QuizzesController from './quizzes'
+import ResponseController from './responses'
 
 const port = process.env.PORT || 4000
 
 const app = createKoaServer({
   cors: true,
-  controllers: [LoginController, QuizzesController],
+  controllers: [LoginController, QuizzesController, ResponseController],
   authorizationChecker: (action: Action) => {
     const header: string = action.request.headers.authorization
     if (header && header.startsWith('Bearer ')) {
