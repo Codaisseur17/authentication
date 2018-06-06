@@ -61,7 +61,7 @@ const port = process.env.PORT || 4000
 
 const setHeaders = (ctx: Koa.Context, next: () => Promise<any>) => {
   //REMOVE ALL HEADERS
-  ctx.headers.remove()
+  // ctx.headers.remove()
   // SET USER HEADERS
   if (ctx.state.user) {
     console.log(ctx.state.user)
