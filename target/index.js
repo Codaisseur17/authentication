@@ -5,6 +5,7 @@ const request = require("request");
 const Router = require("koa-router");
 const jwt = require("koa-jwt");
 const jwt_1 = require("./jwt");
+const jsonwebtoken_1 = require("jsonwebtoken");
 const app = new Koa();
 const routes = new Router();
 const quizzesUrl = process.env.QUIZZES_URL || 'http://quizzes:4001';
@@ -48,8 +49,14 @@ const allWebhooks = async (ctx, next) => {
 routes.post('/logins', async (ctx, next) => {
     const uri = `${usersUrl}${ctx.path}`;
     console.log(`Proxying to ${uri}`);
-    ctx.body = ctx.req.pipe(request(uri));
-    console.log(ctx.body);
+    ctx.body = ctx.req.pipe(request(uri, (err, res, body) => {
+        console.log(err);
+        console.log(body);
+        const token = jsonwebtoken_1.sign({ id: JSON.parse(res.body).user.id }, jwt_1.secret, {
+            expiresIn: '1h'
+        });
+        console.log(token);
+    }));
     await next();
 });
 routes
@@ -57,7 +64,19 @@ routes
     .all(/^\/responses(\/.*)?/, jwt({ secret: jwt_1.secret, passthrough: true }), setHeaders, allResponses)
     .all(/^\/users(\/.*)?/, jwt({ secret: jwt_1.secret, passthrough: true }), setHeaders, allUsers)
     .all(/^\/webhooks(\/.*)?/, jwt({ secret: jwt_1.secret, passthrough: true }), setHeaders, allWebhooks);
-app.use(routes.routes()).use(routes.allowedMethods());
+app
+    .use(async (ctx, next) => {
+    try {
+        await next();
+    }
+    catch (err) {
+        ctx.status = err.status || 500;
+        ctx.body = { message: err.message };
+        ctx.app.emit('error', err, ctx);
+    }
+})
+    .use(routes.routes())
+    .use(routes.allowedMethods());
 app.listen(port, () => {
     return console.log(`Listening on port ${port}`);
 });

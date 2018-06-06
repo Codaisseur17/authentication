@@ -3,6 +3,7 @@ import * as request from 'request'
 import * as Router from 'koa-router'
 import * as jwt from 'koa-jwt'
 import { secret } from './jwt'
+import { sign } from 'jsonwebtoken'
 
 const app = new Koa()
 const routes = new Router()
@@ -56,10 +57,18 @@ const allWebhooks = async (ctx: Koa.Context, next: () => Promise<any>) => {
 routes.post('/logins', async (ctx: Koa.Context, next: () => Promise<any>) => {
   const uri = `${usersUrl}${ctx.path}`
   console.log(`Proxying to ${uri}`)
-  ctx.body = ctx.req.pipe(request(uri))
-  console.log(ctx.body)
+
+  ctx.body = ctx.req.pipe(
+    request(uri, (err, res, body) => {
+      console.log(err)
+      console.log(body)
+      const token = sign({ id: JSON.parse(res.body).user.id }, secret, {
+        expiresIn: '1h'
+      })
+      console.log(token)
+    })
+  )
   await next()
-  // DO SOMETHING WITH REQUEST RESPONSE
 })
 
 routes
