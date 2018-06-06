@@ -47,6 +47,7 @@ import * as request from 'request'
 import * as Router from 'koa-router'
 import * as jwt from 'koa-jwt'
 import { secret, sign } from './jwt'
+import * as bodyparser from 'koa-bodyparser'
 
 const app = new Koa()
 const routes = new Router()
@@ -104,6 +105,7 @@ routes.post('/logins', async (ctx: Koa.Context, next: () => Promise<any>) => {
   console.log(`Proxying ${ctx} to ${uri}`)
   ctx.body = ctx.req.pipe(request(uri))
   await next()
+  console.log(ctx.body)
   // DO SOMETHING WITH REQUEST RESPONSE
   ctx.body = sign(ctx.body)
 })
@@ -133,6 +135,7 @@ routes.all(
   allWebhooks
 )
 
+app.use(bodyparser())
 app.use(routes.routes()).use(routes.allowedMethods())
 app.listen(port, () => {
   return console.log(`Listening on port ${port}`)
