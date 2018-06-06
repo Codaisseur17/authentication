@@ -3,7 +3,6 @@ import * as request from 'request'
 import * as Router from 'koa-router'
 import * as jwt from 'koa-jwt'
 import { secret } from './jwt'
-import * as bodyparser from 'koa-bodyparser'
 
 const app = new Koa()
 const routes = new Router()
@@ -16,20 +15,15 @@ const webhooksUrl = process.env.WEBHOOKS_URL || 'http://webhooks:4004'
 const port = process.env.PORT || 4000
 
 const setHeaders = async (ctx: Koa.Context, next: () => Promise<any>) => {
-  //REMOVE ALL HEADERS
-  // ctx.headers.remove()
-  // SET USER HEADERS
   if (ctx.state.user) {
     console.log(ctx.state.user)
-    ctx.set('X-User-ID', ctx.state.user.id)
+    ctx.set('X-User-id', ctx.state.user.id)
+    ctx.set('X-User-isTeacher', ctx.state.user.isTeacher)
+    console.log(ctx.headers)
   }
 
   await next()
 }
-
-// const log = ctx => {
-//   console.log(ctx.status)
-// }
 
 const allQuizzes = async (ctx: Koa.Context, next: () => Promise<any>) => {
   const uri = `${quizzesUrl}${ctx.path}${ctx.querystring}`
@@ -63,8 +57,8 @@ routes.post('/logins', async (ctx: Koa.Context, next: () => Promise<any>) => {
   const uri = `${usersUrl}${ctx.path}`
   console.log(`Proxying to ${uri}`)
   ctx.body = ctx.req.pipe(request(uri))
+  console.log(ctx.body)
   await next()
-
   // DO SOMETHING WITH REQUEST RESPONSE
 })
 
@@ -95,7 +89,15 @@ routes
   )
 
 app
-  .use(bodyparser())
+  .use(async (ctx, next) => {
+    try {
+      await next()
+    } catch (err) {
+      ctx.status = err.status || 500
+      ctx.body = { message: err.message }
+      ctx.app.emit('error', err, ctx)
+    }
+  })
   .use(routes.routes())
   .use(routes.allowedMethods())
 app.listen(port, () => {
