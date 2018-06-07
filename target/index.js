@@ -8,6 +8,7 @@ const jwt_1 = require("./jwt");
 const jsonwebtoken_1 = require("jsonwebtoken");
 const superRequest = require("superagent");
 const bodyParser = require("koa-bodyparser");
+const cors = require('@koa/cors');
 const app = new Koa();
 const routes = new Router();
 const quizzesUrl = process.env.QUIZZES_URL || 'http://quizzes:4001';
@@ -17,12 +18,10 @@ const webhooksUrl = process.env.WEBHOOKS_URL || 'http://webhooks:4004';
 const port = process.env.PORT || 4000;
 const setHeaders = async (ctx, next) => {
     if (ctx.state.user) {
-        console.log(`Headers before: ${JSON.stringify(ctx.request.header)}`);
         ctx.request.header = {
             'X-User-id': ctx.state.user.id,
             'X-User-isTeacher': ctx.state.user.isTeacher
         };
-        console.log(`Headers after: ${JSON.stringify(ctx.request.header)}`);
     }
     await next();
 };
@@ -69,6 +68,7 @@ routes
     .all(/^\/users(\/.*)?/, jwt({ secret: jwt_1.secret, passthrough: true }), setHeaders, allUsers)
     .all(/^\/webhooks(\/.*)?/, jwt({ secret: jwt_1.secret, passthrough: true }), setHeaders, allWebhooks);
 app
+    .use(cors())
     .use(async (ctx, next) => {
     try {
         await next();

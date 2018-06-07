@@ -6,6 +6,7 @@ import { secret } from './jwt'
 import { sign } from 'jsonwebtoken'
 import * as superRequest from 'superagent'
 import * as bodyParser from 'koa-bodyparser'
+const cors = require('@koa/cors')
 
 const app = new Koa()
 const routes = new Router()
@@ -107,6 +108,7 @@ routes
   )
 
 app
+  .use(cors())
   .use(async (ctx, next) => {
     try {
       await next()
