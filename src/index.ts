@@ -19,10 +19,10 @@ const port = process.env.PORT || 4000
 
 const setHeaders = async (ctx: Koa.Context, next: () => Promise<any>) => {
   if (ctx.state.user) {
-    console.log(ctx.state.user)
-    ctx.set('X-User-id', ctx.state.user.id)
-    ctx.set('X-User-isTeacher', ctx.state.user.isTeacher)
-    console.log(ctx.headers)
+    ctx.request.header = {
+      'X-User-id': ctx.state.user.id,
+      'X-User-isTeacher': ctx.state.user.isTeacher
+    }
   }
 
   await next()
@@ -72,7 +72,7 @@ routes.post(
       isTeacher: response.body.loginUser.isTeacher
     }
 
-    const jwt = sign(user, secret, { expiresIn: '1h' })
+    const jwt = sign(user, secret, { expiresIn: '4h' })
 
     ctx.body = { jwt }
 
