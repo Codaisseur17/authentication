@@ -3,7 +3,7 @@ import * as request from 'request'
 import * as Router from 'koa-router'
 import * as jwt from 'koa-jwt'
 import { secret } from './jwt'
-import { sign } from 'jsonwebtoken'
+// import { sign } from 'jsonwebtoken'
 
 const app = new Koa()
 const routes = new Router()
@@ -58,17 +58,51 @@ routes.post('/logins', async (ctx: Koa.Context, next: () => Promise<any>) => {
   const uri = `${usersUrl}${ctx.path}`
   console.log(`Proxying to ${uri}`)
 
-  ctx.body = ctx.req.pipe(
-    request(uri, (err, res, body) => {
-      console.log(err)
-      console.log(body)
-      const token = sign({ id: JSON.parse(res.body).user.id }, secret, {
-        expiresIn: '1h'
-      })
-      console.log(token)
-    })
-  )
+  const pipeRequest = async (req, uri) => {
+    const response = await JSON.parse(req.pipe(request(uri)))
+
+    console.log(`Response: ${response}`)
+
+    return response
+  }
+
+  const result = pipeRequest(ctx.req, uri)
+
+  console.log(`Result: ${result}`)
+
+  // const signToken = response => {
+  //   console.log(`Received by token: ${response}`)
+
+  //   // return sign({ id: parsed.id }, secret, {
+  //   //   expiresIn: '1h'
+  //   // })
+  // }
+
+  // const getJwt = (pipeRequest, signToken) => (req, uri) => {
+  //   signToken(pipeRequest(req, uri))
+  // }
+
+  // const jwt = await getJwt(pipeRequest, signToken)(ctx.req, uri)
+
+  // console.log(jwt)
+
+  // const token = sign({ id: JSON.parse(user).user.id }, secret, {
+  //   expiresIn: '1h'
+  // })
+
   await next()
+
+  //   ctx.body = ctx.req.pipe(
+  //     request(uri, (err, res, body) => {
+  //       console.log(err)
+  //       console.log(body)
+  //       const token = sign({ id: JSON.parse(res.body).user.id }, secret, {
+  //         expiresIn: '1h'
+  //       })
+  //       console.log(token)
+  //     })
+  //   )
+  //   await next()
 })
 
 routes

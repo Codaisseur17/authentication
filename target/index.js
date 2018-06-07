@@ -5,7 +5,6 @@ const request = require("request");
 const Router = require("koa-router");
 const jwt = require("koa-jwt");
 const jwt_1 = require("./jwt");
-const jsonwebtoken_1 = require("jsonwebtoken");
 const app = new Koa();
 const routes = new Router();
 const quizzesUrl = process.env.QUIZZES_URL || 'http://quizzes:4001';
@@ -49,14 +48,13 @@ const allWebhooks = async (ctx, next) => {
 routes.post('/logins', async (ctx, next) => {
     const uri = `${usersUrl}${ctx.path}`;
     console.log(`Proxying to ${uri}`);
-    ctx.body = ctx.req.pipe(request(uri, (err, res, body) => {
-        console.log(err);
-        console.log(body);
-        const token = jsonwebtoken_1.sign({ id: JSON.parse(res.body).user.id }, jwt_1.secret, {
-            expiresIn: '1h'
-        });
-        console.log(token);
-    }));
+    const pipeRequest = async (req, uri) => {
+        const response = await JSON.parse(req.pipe(request(uri)));
+        console.log(`Response: ${response}`);
+        return response;
+    };
+    const result = pipeRequest(ctx.req, uri);
+    console.log(`Result: ${result}`);
     await next();
 });
 routes
