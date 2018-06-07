@@ -35,6 +35,13 @@ const allQuizzes = async (ctx: Koa.Context, next: () => Promise<any>) => {
   await next()
 }
 
+const allQuestions = async (ctx: Koa.Context, next: () => Promise<any>) => {
+  const uri = `${quizzesUrl}${ctx.path}${ctx.querystring}`
+  console.log(`Proxying to ${uri}`)
+  ctx.body = ctx.req.pipe(request(uri))
+  await next()
+}
+
 const allResponses = async (ctx: Koa.Context, next: () => Promise<any>) => {
   const uri = `${responsesUrl}${ctx.path}${ctx.querystring}`
   console.log(`Proxying to ${uri}`)
@@ -86,6 +93,12 @@ routes
     jwt({ secret: secret, passthrough: true }),
     setHeaders,
     allQuizzes
+  )
+  .all(
+    /^\/questions(\/.*)?/,
+    jwt({ secret: secret, passthrough: true }),
+    setHeaders,
+    allQuestions
   )
   .all(
     /^\/responses(\/.*)?/,
