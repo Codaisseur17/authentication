@@ -4,6 +4,8 @@ import * as Router from 'koa-router'
 import * as jwt from 'koa-jwt'
 import { secret } from './jwt'
 import { sign } from 'jsonwebtoken'
+import * as superRequest from 'superagent'
+import * as bodyParser from 'koa-bodyparser'
 
 const app = new Koa()
 const routes = new Router()
@@ -54,22 +56,29 @@ const allWebhooks = async (ctx: Koa.Context, next: () => Promise<any>) => {
   await next()
 }
 
-routes.post('/logins', async (ctx: Koa.Context, next: () => Promise<any>) => {
-  const uri = `${usersUrl}${ctx.path}`
-  console.log(`Proxying to ${uri}`)
+routes.post(
+  '/logins',
+  bodyParser(),
+  async (ctx: Koa.Context, next: () => Promise<any>) => {
+    const uri = `${usersUrl}${ctx.path}`
+    console.log(`Proxying to ${uri}`)
 
-  ctx.body = ctx.req.pipe(
-    request(uri, (err, res, body) => {
-      console.log(err)
-      console.log(body)
-      const token = sign({ id: JSON.parse(res.body).user.id }, secret, {
-        expiresIn: '1h'
-      })
-      console.log(token)
-    })
-  )
-  await next()
-})
+    const { email, password } = ctx.request.body
+
+    const response = await superRequest.post(uri).send({ email, password })
+
+    const user = {
+      id: response.body.loginUser.id,
+      isTeacher: response.body.loginUser.isTeacher
+    }
+
+    const jwt = sign(user, secret, { expiresIn: '1h' })
+
+    ctx.body = { jwt }
+
+    await next()
+  }
+)
 
 routes
   .all(
