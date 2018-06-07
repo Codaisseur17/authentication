@@ -17,10 +17,12 @@ const webhooksUrl = process.env.WEBHOOKS_URL || 'http://webhooks:4004';
 const port = process.env.PORT || 4000;
 const setHeaders = async (ctx, next) => {
     if (ctx.state.user) {
-        console.log(ctx.state.user);
-        ctx.set('X-User-id', ctx.state.user.id);
-        ctx.set('X-User-isTeacher', ctx.state.user.isTeacher);
-        console.log(ctx.headers);
+        console.log(`Headers before: ${JSON.stringify(ctx.request.header)}`);
+        ctx.request.header = {
+            'X-User-id': ctx.state.user.id,
+            'X-User-isTeacher': ctx.state.user.isTeacher
+        };
+        console.log(`Headers after: ${JSON.stringify(ctx.request.header)}`);
     }
     await next();
 };
@@ -52,13 +54,12 @@ routes.post('/logins', bodyParser(), async (ctx, next) => {
     const uri = `${usersUrl}${ctx.path}`;
     console.log(`Proxying to ${uri}`);
     const { email, password } = ctx.request.body;
-    console.log(email, password);
     const response = await superRequest.post(uri).send({ email, password });
     const user = {
-        id: response.body.user.id,
-        isTeacher: response.body.user.isTeacher
+        id: response.body.loginUser.id,
+        isTeacher: response.body.loginUser.isTeacher
     };
-    const jwt = jsonwebtoken_1.sign(user, jwt_1.secret, { expiresIn: '1h' });
+    const jwt = jsonwebtoken_1.sign(user, jwt_1.secret, { expiresIn: '4h' });
     ctx.body = { jwt };
     await next();
 });
